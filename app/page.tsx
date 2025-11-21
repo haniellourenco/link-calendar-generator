@@ -100,7 +100,7 @@ export default function Home() {
 		<div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 font-sans">
 			<div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
 				<h1 className="text-2xl font-bold mb-6 text-gray-800 text-center">
-					Gerador de Link Calendar
+					Gerador de links para Google Agenda
 				</h1>
 
 				<form onSubmit={generateLink} className="space-y-4">
