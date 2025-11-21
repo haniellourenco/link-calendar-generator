@@ -67,7 +67,7 @@ export default function Home() {
 
 	const copyUrlToClipboard = () => {
 		navigator.clipboard.writeText(generatedLink);
-		alert("URL bruta copiada!");
+		alert("URL copiada!");
 	};
 
 	const copyRichLinkToClipboard = () => {
@@ -88,11 +88,11 @@ export default function Home() {
 		navigator.clipboard
 			.write(data)
 			.then(() => {
-				alert("Hiperlink copiado! Tente colar em um e-mail.");
+				alert("Hiperlink copiado!");
 			})
 			.catch((err) => {
 				console.error("Erro ao copiar: ", err);
-				alert("Erro ao copiar rich text. Seu navegador pode não suportar.");
+				alert("Erro ao copiar rich text.");
 			});
 	};
 
