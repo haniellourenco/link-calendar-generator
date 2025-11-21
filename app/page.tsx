@@ -1,65 +1,260 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+	const [formData, setFormData] = useState({
+		titulo: "",
+		data: "",
+		horaInicio: "",
+		horaFim: "",
+		linkMeet: "",
+		descricao: "",
+	});
+
+	const [generatedLink, setGeneratedLink] = useState("");
+
+	const handleChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+	) => {
+		setFormData({
+			...formData,
+			[e.target.name]: e.target.value,
+		});
+	};
+
+	const ensureProtocol = (url: string) => {
+		if (!url) return "";
+		const trimmedUrl = url.trim();
+		// Verifica se começa com http:// ou https:// (case insensitive)
+		if (!/^https?:\/\//i.test(trimmedUrl)) {
+			return `https://${trimmedUrl}`;
+		}
+		return trimmedUrl;
+	};
+
+	const formatGoogleDate = (dateStr: string, timeStr: string) => {
+		if (!dateStr || !timeStr) return "";
+		const dateClean = dateStr.replace(/-/g, "");
+		const timeClean = timeStr.replace(/:/g, "") + "00";
+		return `${dateClean}T${timeClean}`;
+	};
+
+	const generateLink = (e: React.FormEvent) => {
+		e.preventDefault();
+
+		const { titulo, data, horaInicio, horaFim, linkMeet, descricao } = formData;
+
+		const startDateTime = formatGoogleDate(data, horaInicio);
+		const endDateTime = formatGoogleDate(data, horaFim);
+
+		// Aplica a sanitização no link do meet aqui
+		const locationUrl = ensureProtocol(linkMeet);
+
+		const params = new URLSearchParams();
+		params.append("action", "TEMPLATE");
+		params.append("text", titulo);
+		params.append("details", descricao);
+		params.append("location", locationUrl);
+
+		if (startDateTime && endDateTime) {
+			params.append("dates", `${startDateTime}/${endDateTime}`);
+		}
+
+		const finalUrl = `https://calendar.google.com/calendar/render?${params.toString()}`;
+		setGeneratedLink(finalUrl);
+	};
+
+	const copyUrlToClipboard = () => {
+		navigator.clipboard.writeText(generatedLink);
+		alert("URL bruta copiada!");
+	};
+
+	const copyRichLinkToClipboard = () => {
+		const linkHtml = `<a href="${generatedLink}">${
+			formData.titulo || "Link do Evento"
+		}</a>`;
+
+		const blobHtml = new Blob([linkHtml], { type: "text/html" });
+		const blobText = new Blob([generatedLink], { type: "text/plain" });
+
+		const data = [
+			new ClipboardItem({
+				["text/html"]: blobHtml,
+				["text/plain"]: blobText,
+			}),
+		];
+
+		navigator.clipboard
+			.write(data)
+			.then(() => {
+				alert("Hiperlink copiado! Tente colar em um e-mail.");
+			})
+			.catch((err) => {
+				console.error("Erro ao copiar: ", err);
+				alert("Erro ao copiar rich text. Seu navegador pode não suportar.");
+			});
+	};
+
+	return (
+		<div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 font-sans">
+			<div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
+				<h1 className="text-2xl font-bold mb-6 text-gray-800 text-center">
+					Gerador de Link Calendar
+				</h1>
+
+				<form onSubmit={generateLink} className="space-y-4">
+					{/* Título */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700">
+							Nome do Evento
+						</label>
+						<input
+							type="text"
+							name="titulo"
+							required
+							className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-black focus:ring-blue-500 focus:border-blue-500"
+							value={formData.titulo}
+							onChange={handleChange}
+						/>
+					</div>
+
+					{/* Data */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700">
+							Data
+						</label>
+						<input
+							type="date"
+							name="data"
+							required
+							className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-black"
+							value={formData.data}
+							onChange={handleChange}
+						/>
+					</div>
+
+					{/* Horários */}
+					<div className="grid grid-cols-2 gap-4">
+						<div>
+							<label className="block text-sm font-medium text-gray-700">
+								Início
+							</label>
+							<input
+								type="time"
+								name="horaInicio"
+								required
+								className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-black"
+								value={formData.horaInicio}
+								onChange={handleChange}
+							/>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700">
+								Fim
+							</label>
+							<input
+								type="time"
+								name="horaFim"
+								required
+								className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-black"
+								value={formData.horaFim}
+								onChange={handleChange}
+							/>
+						</div>
+					</div>
+
+					{/* Link Meet */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700">
+							Link do Meet / Local
+						</label>
+						<input
+							type="text"
+							name="linkMeet"
+							placeholder="ex: meet.google.com/abc-defg-hij"
+							className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-black"
+							value={formData.linkMeet}
+							onChange={handleChange}
+						/>
+						<p className="text-xs text-gray-500 mt-1">
+							Aceita com ou sem https://
+						</p>
+					</div>
+
+					{/* Descrição */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700">
+							Descrição
+						</label>
+						<textarea
+							name="descricao"
+							rows={3}
+							className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-black"
+							value={formData.descricao}
+							onChange={handleChange}
+						/>
+					</div>
+
+					<button
+						type="submit"
+						className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
+					>
+						Gerar Link
+					</button>
+				</form>
+
+				{/* Área de Resultado */}
+				{generatedLink && (
+					<div className="mt-8 pt-6 border-t border-gray-200">
+						{/* Resultado 1: Hiperlink Formatado */}
+						<div className="mb-6">
+							<h3 className="text-sm font-bold text-gray-700 mb-2">
+								Preview do Hiperlink:
+							</h3>
+							<div className="p-4 bg-blue-50 border border-blue-100 rounded flex flex-col items-center gap-3">
+								{/* O Link Renderizado */}
+								<a
+									href={generatedLink}
+									target="_blank"
+									rel="noreferrer"
+									className="text-xl font-bold text-blue-600 hover:underline cursor-pointer"
+								>
+									{formData.titulo || "Link do Evento"}
+								</a>
+
+								{/* Botão de Copiar Rich Text */}
+								<button
+									onClick={copyRichLinkToClipboard}
+									className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 shadow-sm flex items-center gap-2"
+								>
+									📋 Copiar Hiperlink
+								</button>
+							</div>
+						</div>
+
+						{/* Resultado 2: URL Crua */}
+						<div>
+							<h3 className="text-sm font-bold text-gray-700 mb-2">
+								URL Completa:
+							</h3>
+							<div className="flex gap-2">
+								<input
+									readOnly
+									value={generatedLink}
+									className="flex-1 text-xs bg-gray-100 border border-gray-300 p-2 rounded text-gray-600 font-mono"
+								/>
+								<button
+									onClick={copyUrlToClipboard}
+									className="bg-gray-700 text-white px-3 py-2 rounded hover:bg-gray-800 text-xs font-medium whitespace-nowrap"
+								>
+									Copiar URL
+								</button>
+							</div>
+						</div>
+					</div>
+				)}
+			</div>
+		</div>
+	);
 }
